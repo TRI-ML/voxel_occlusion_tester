@@ -1,0 +1,13 @@
+cycler
+decorator
+future
+kiwisolver
+matplotlib
+networkx
+pyparsing
+python-dateutil
+PyWavelets
+scikit-image
+scipy
+six
+tifffile
