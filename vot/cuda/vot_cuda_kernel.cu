@@ -12,7 +12,7 @@ __global__ void occlusion_test_cuda_kernel(
         const int num_faces,
         const int image_height,
         const int image_width,
-        bool* occ_flag_map) {
+        int32_t* occ_flag_map) {
 
     const int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i >= batch_size * num_faces) {
@@ -70,7 +70,7 @@ __global__ void occlusion_test_cuda_kernel(
         face_inv[k] /= face_inv_denominator;
     }
 
-    bool occ_flag = false;
+    bool occ_flag = 0;
     const int xi_min = max(ceil(p[0][0]), 0.);
     const int xi_max = min(p[2][0], iw - 1.0);
     for (int xi = xi_min; xi <= xi_max; xi++) {
@@ -111,12 +111,17 @@ __global__ void occlusion_test_cuda_kernel(
             for (int k = 0; k < 3; k++) w[k] /= w_sum;
             /* compute 1 / zp = sum(w / z) */
             const float zp = 1.0 / (w[0] / p[0][2] + w[1] / p[1][2] + w[2] / p[2][2]);
+            if (zp < 0.0) continue;
             if (mask[index] && depth_map[index] <= zp) {
-                occ_flag = true;
+                occ_flag = 1;
             }
         }
     }
-    occ_flag_map[i / 12] = occ_flag;
+
+    if (occ_flag == 1) {
+        occ_flag_map[i / 12] = occ_flag;
+    }
+
 }
 
 
@@ -131,9 +136,9 @@ at::Tensor run_cuda(
     const int num_faces = faces.size(1);
     const int threads = 512;
 
-    auto bool_opts = faces.options().dtype(at::kBool);
+    auto int_opts = faces.options().dtype(at::kInt);
 
-    at::Tensor occ_flag_map = at::empty({batch_size, num_faces / 12}, bool_opts);
+    at::Tensor occ_flag_map = at::full({batch_size, num_faces / 12}, 0, int_opts);
 
     const dim3 blocks1 ((batch_size * num_faces - 1) / threads +1);
 
@@ -145,7 +150,7 @@ at::Tensor run_cuda(
         num_faces,
         image_height,
         image_width,
-        occ_flag_map.data_ptr<bool>());
+        occ_flag_map.data_ptr<int32_t>());
 
     cudaError_t err = cudaGetLastError();
     if (err != cudaSuccess)  {
