@@ -119,8 +119,8 @@ __global__ void occlusion_test_cuda_kernel(
             /* compute 1 / zp = sum(w / z) */
             const float zp = 1.0 / (w[0] / p[0][2] + w[1] / p[1][2] + w[2] / p[2][2]);
             const float zp_diff = zp - depth_map[index];
-            if (zp < 0.0 || zp_diff > 320.0) continue; // 640.0 must be a hyperparameter
-            if (mask[index] && zp_diff >= -10.0) {
+            if (zp < 0.0) continue;
+            if (mask[index] && zp_diff >= -20.0) {
                 occ_flag = true;
             }
         }
