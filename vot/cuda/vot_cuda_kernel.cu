@@ -74,9 +74,6 @@ __global__ void occlusion_test_cuda_kernel(
     const int xi_min = max(ceil(p[0][0]), 0.);
     const int xi_max = min(p[2][0], iw - 1.0);
 
-    if (xi_min == 0 || xi_max == iw - 1.0) {
-      occ_flag = true;
-    }
     for (int xi = xi_min; xi <= xi_max; xi++) {
         /* compute yi_min and yi_max */
         float yi1, yi2;
@@ -98,9 +95,6 @@ __global__ void occlusion_test_cuda_kernel(
         const int yi_min = max(0., ceil(min(yi1, yi2)));
         const int yi_max = min(max(yi1, yi2), ih - 1.0);
 
-        if (yi_min == 0 || yi_max == ih - 1.0) {
-          occ_flag = true;
-        }
         for (int yi = yi_min; yi <= yi_max; yi++) {
             /* index in output buffers */
             int index = bn * ih * iw + yi * iw + xi;
